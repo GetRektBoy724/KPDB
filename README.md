@@ -1,2 +1,2 @@
-# KPDB
-Simple Windows kernel-mode-compatible PDB parser
+# KPDB - Windows kernel-mode PDB parser
+Only supports getting symbols, will add types parsing capability on the next release.
