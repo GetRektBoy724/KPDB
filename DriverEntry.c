@@ -18,7 +18,7 @@ void KpdbDemoRoutine() {
 
 	SIZE_T FileSize = 0;
 	PVOID pdbfile = NULL;
-	LPCWSTR pdbfilepath = L"\\??\\C:\\Users\\ZEROBI~1\\AppData\\Local\\Temp\\ida\\ntkrnlmp.pdb\\87A327C6C356B7E2BAC1D75E779701651\\ntkrnlmp.pdb"; // replace this with the path of the PDB (keep the "\\??\\")
+	LPCWSTR pdbfilepath = L"\\??\\C:\\mysymbol\\ntkrnlmp.pdb"; // replace this with the path of the PDB (keep the "\\??\\")
 	// read PDB file and parse
 	DbgPrintEx(0, 0, "[KPDB] KpdbDemoRoutine - Reading NT symbols...");
 	{
@@ -45,6 +45,21 @@ void KpdbDemoRoutine() {
 			ExFreePool(pdbfile);
 			DbgPrintEx(0, 0, "[KPDB] KpdbDemoRoutine - KpdbGetPDBSymbolOffset failed!");
 			return;
+		}
+
+		//if (!KpdbTravelTPICodeView(pdbfile)) {
+		//	// free pool
+		//	ExFreePool(pdbfile);
+		//	DbgPrintEx(0, 0, "[KPDB] KpdbDemoRoutine - KpdbTravelTPICodeView failed!\n");
+		//	return;
+		//}
+
+		LONG offset = KpdbGetStructMemberOffset(pdbfile, "_EPROCESS", "UniqueProcessId");
+		if (offset != -1) {
+			DbgPrintEx(0, 0, "[KPDB] Offset of _EPROCESS->UniqueProcessId: %d\n", offset);
+		}
+		else {
+			DbgPrintEx(0, 0, "[KPDB] Failed to get offset for _EPROCESS->UniqueProcessId.\n");
 		}
 
 		// free pool

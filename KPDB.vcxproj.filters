@@ -33,6 +33,9 @@
     <ClCompile Include="ntutils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tpi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kpdb.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ntutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tpi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

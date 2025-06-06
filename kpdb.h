@@ -8,6 +8,8 @@
 #include <strsafe.h>
 #include <fltkernel.h>
 
+#include "tpi.h"
+
 const char kMagic[32];
 
 #pragma pack(push, 1)
