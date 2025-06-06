@@ -47,11 +47,19 @@ void KpdbDemoRoutine() {
 			return;
 		}
 
-		if (!KpdbTravelTPICodeView(pdbfile)) {
-			// free pool
-			ExFreePool(pdbfile);
-			DbgPrintEx(0, 0, "[KPDB] KpdbDemoRoutine - KpdbTravelTPICodeView failed!\n");
-			return;
+		//if (!KpdbTravelTPICodeView(pdbfile)) {
+		//	// free pool
+		//	ExFreePool(pdbfile);
+		//	DbgPrintEx(0, 0, "[KPDB] KpdbDemoRoutine - KpdbTravelTPICodeView failed!\n");
+		//	return;
+		//}
+
+		LONG offset = KpdbGetStructMemberOffset(pdbfile, "_EPROCESS", "UniqueProcessId");
+		if (offset != -1) {
+			DbgPrintEx(0, 0, "[KPDB] Offset of _EPROCESS->UniqueProcessId: %d\n", offset);
+		}
+		else {
+			DbgPrintEx(0, 0, "[KPDB] Failed to get offset for _EPROCESS->UniqueProcessId.\n");
 		}
 
 		// free pool

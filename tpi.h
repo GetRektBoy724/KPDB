@@ -12,6 +12,7 @@
 
 
 BOOL KpdbTravelTPICodeView(PVOID pdbfile);
+LONG KpdbGetStructMemberOffset(PVOID pdbfile, PCHAR StructName, PCHAR MemberName);
 
 #pragma pack(push, 1)
 typedef struct {

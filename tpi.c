@@ -1262,7 +1262,6 @@ TPIResult parse_all_type_records(const TPIStream* tpi_stream_ptr, TPIContext* ct
             current_type_idx, tpi_stream_ptr->header.type_index_end);
         return TPI_PARSE_ERROR;
     }
-    DbgPrintEx(0, 0, "parse_all_type_records at line: 1305.\n");
     return TPI_OK;
 }
 
@@ -1717,6 +1716,85 @@ TPIResult parse_all_type_records(const TPIStream* tpi_stream_ptr, TPIContext* ct
     }
 }
 
+ LONG KpdbTravelTPICodeViewAndFindMemberOffset(TPIContext* ctx, PCHAR StructName, PCHAR MemberName);
+ struct codeview_custom_type* find_struct_by_name(TPIContext* ctx, PCHAR StructName);
+ LONG find_member_offset_in_fieldlist(TPIContext* ctx, ULONG fieldlist_idx, PCHAR MemberName);
+
+ struct codeview_custom_type* find_struct_by_name(TPIContext* ctx, PCHAR StructName) {
+     if (!ctx || !StructName) {
+         return NULL;
+     }
+
+     struct codeview_custom_type* found_forward_ref = NULL;
+
+     for (int i = 0; i < ctx->count; i++) {
+         struct codeview_custom_type* current_type = ctx->types[i];
+         if (current_type) {
+             char* current_type_name = NULL;
+             USHORT current_type_properties = 0;
+
+             if (current_type->kind == LF_CLASS || current_type->kind == LF_STRUCTURE) {
+                 current_type_name = current_type->lf_structure.name;
+                 current_type_properties = current_type->lf_structure.properties;
+             }
+             else if (current_type->kind == LF_ENUM) {
+                 current_type_name = current_type->lf_enum.name;
+                 current_type_properties = current_type->lf_enum.properties;
+             }
+             else if (current_type->kind == LF_TYPEDEF) {
+                 current_type_name = current_type->lf_typedef.name;
+
+                 struct codeview_custom_type* underlying_type = find_type_by_index(ctx, current_type->lf_typedef.underlying_type_idx);
+                 if (underlying_type && (underlying_type->kind == LF_CLASS || underlying_type->kind == LF_STRUCTURE || underlying_type->kind == LF_ENUM)) {
+
+                     if (underlying_type->kind == LF_CLASS || underlying_type->kind == LF_STRUCTURE) {
+                         current_type_name = underlying_type->lf_structure.name;
+                         current_type_properties = underlying_type->lf_structure.properties;
+                     }
+                     else {
+                         current_type_name = underlying_type->lf_enum.name;
+                         current_type_properties = underlying_type->lf_enum.properties;
+                     }
+                 }
+                 else {
+                     current_type_name = NULL;
+                 }
+             }
+
+             if (current_type_name && strcmp(current_type_name, StructName) == 0) {
+
+                 if (current_type_properties & CV_PPROP_FORWARDREF) {
+
+                     if (found_forward_ref == NULL) {
+                         found_forward_ref = current_type;
+                     }
+                 }
+                 else {
+                     return current_type;
+                 }
+             }
+         }
+     }
+     return NULL;
+ }
+
+ LONG find_member_offset_in_fieldlist(TPIContext* ctx, ULONG fieldlist_idx, PCHAR MemberName) {
+     struct codeview_custom_type* fieldlist_type = find_type_by_index(ctx, fieldlist_idx);
+     if (!fieldlist_type || fieldlist_type->kind != LF_FIELDLIST) {
+         return -1;
+     }
+
+     struct codeview_subtype* current_subtype = fieldlist_type->lf_fieldlist.subtypes;
+     while (current_subtype) {
+         if (current_subtype->kind == LF_MEMBER) {
+             if (current_subtype->lf_member.name && strcmp(current_subtype->lf_member.name, MemberName) == 0) {
+                 return (LONG)current_subtype->lf_member.offset.num;
+             }
+         }
+         current_subtype = current_subtype->next;
+     }
+     return -1;
+ }
 
 BOOL KpdbTravelTPICodeView(PVOID pdbfile) {
     DbgPrintEx(0,0, "Start reading TPI Stream.....\n");
@@ -1796,3 +1874,97 @@ cleanup:
     ExFreePool(streams);
     return success_status;
 }
+
+LONG KpdbTravelTPICodeViewAndFindMemberOffset(TPIContext* ctx, PCHAR StructName, PCHAR MemberName) {
+    if (!ctx || !StructName || !MemberName)
+         return -1;
+
+    struct codeview_custom_type* struct_type = find_struct_by_name(ctx, StructName);
+    if (!struct_type) {
+        DbgPrintEx(0, 0, "[KPDB] KpdbTravelTPICodeViewAndFindMemberOffset - Struct '%s' not found.\n", StructName);
+        return -1;
+    }
+
+    if (struct_type->kind == LF_CLASS || struct_type->kind == LF_STRUCTURE) {
+        ULONG field_list_idx = struct_type->lf_structure.field_list_idx;
+        if (field_list_idx == 0) {
+            DbgPrintEx(0, 0, "[KPDB] KpdbTravelTPICodeViewAndFindMemberOffset - Struct '%s' has no field list.\n", StructName);
+            return -1;
+        }
+        LONG offset = find_member_offset_in_fieldlist(ctx, field_list_idx, MemberName);
+        if (offset != -1) {
+            DbgPrintEx(0, 0, "[KPDB] Found offset for %s::%s: %d\n", StructName, MemberName, offset);
+            return offset;
+        }
+        else {
+            DbgPrintEx(0, 0, "[KPDB] Member '%s' not found in struct '%s'.\n", MemberName, StructName);
+        }
+    }
+    else {
+        DbgPrintEx(0, 0, "[KPDB] Type '%s' is not a class or struct (kind: 0x%x).\n", StructName, struct_type->kind);
+    }
+
+    return -1;
+}
+
+LONG KpdbGetStructMemberOffset(PVOID pdbfile, PCHAR StructName, PCHAR MemberName) {
+    LONG offset = -1;
+    PVOID tpi_stream_ptr = NULL;
+    SIZE_T tpi_stream_size = 0;
+
+    StreamData* streams = NULL;
+    DWORD streams_count = 0;
+    TPIContext tpi_context;
+    RtlZeroMemory(&tpi_context, sizeof(TPIContext));
+
+#define TPI_STREAM_INDEX 2
+
+    streams = KpdbGetPDBStreams(pdbfile, &streams_count);
+    if (!streams) {
+        DbgPrintEx(0, 0, "[KPDB] KpdbGetStructMemberOffset - KpdbGetPDBStreams failed.\n");
+        return -1;
+    }
+
+    if (streams_count > TPI_STREAM_INDEX) {
+        tpi_stream_ptr = streams[TPI_STREAM_INDEX].StreamPointer;
+        tpi_stream_size = streams[TPI_STREAM_INDEX].StreamSize;
+    }
+    else {
+        DbgPrintEx(0, 0, "[KPDB] KpdbGetStructMemberOffset - TPI stream not found or insufficient streams.\n");
+        goto cleanup;
+    }
+
+    if (tpi_stream_ptr == NULL || tpi_stream_size == 0) {
+        DbgPrintEx(0, 0, "[KPDB] KpdbGetStructMemberOffset - TPI stream data is invalid.\n");
+        goto cleanup;
+    }
+
+    TPIStream tpi_stream;
+    RtlZeroMemory(&tpi_stream, sizeof(TPIStream));
+    tpi_stream.data = (UCHAR*)tpi_stream_ptr;
+    tpi_stream.size = tpi_stream_size;
+
+    if (check_tpi_header(&tpi_stream) != TPI_OK) {
+        DbgPrintEx(0, 0, "[KPDB] KpdbGetStructMemberOffset - check_tpi_header failed.\n");
+        goto cleanup;
+    }
+
+    if (parse_all_type_records(&tpi_stream, &tpi_context) != TPI_OK) {
+        DbgPrintEx(0, 0, "[KPDB] KpdbGetStructMemberOffset - parse_all_type_records failed.\n");
+        goto cleanup;
+    }
+
+    offset = KpdbTravelTPICodeViewAndFindMemberOffset(&tpi_context, StructName, MemberName);
+
+cleanup:
+    for (int i = 0; i < streams_count; i++) {
+        if (streams[i].StreamPointer) {
+            ExFreePool(streams[i].StreamPointer);
+        }
+    }
+    if (streams) {
+        ExFreePool(streams);
+    }
+    return offset;
+}
+
