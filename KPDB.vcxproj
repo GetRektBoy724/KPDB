@@ -86,6 +86,9 @@
     <DriverSign>
       <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
     </DriverSign>
+    <ClCompile>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DriverSign>
@@ -119,11 +122,13 @@
     <ClCompile Include="DriverEntry.c" />
     <ClCompile Include="kpdb.c" />
     <ClCompile Include="ntutils.c" />
+    <ClCompile Include="tpi.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DriverEntry.h" />
     <ClInclude Include="kpdb.h" />
     <ClInclude Include="ntutils.h" />
+    <ClInclude Include="tpi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
