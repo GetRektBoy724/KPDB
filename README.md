@@ -8,7 +8,7 @@ If you want to see what KPDB can do, try cloning the repository, build the proje
 # Sponsor
 ![68747470733a2f2f692e696d6775722e636f6d2f4b454f796445372e706e67](https://github.com/user-attachments/assets/2e0dd6a4-c4e9-48a3-b9c0-4e9d5876c7d6)
 
-WebSec BV, a cybersecurity company based in Amsterdam, is recognized for their dedication to helping businesses and individuals protect themselves against online threats. As a valued sponsor, they have contributed significantly to the promotion of cybersecurity and the creation of a safer online world.
+WebSec BV, a cybersecurity company headquartered in Amsterdam (The Netherlands) with an office in Wyoming (USA), is recognized for their dedication to helping businesses and individuals protect themselves against online threats. As a valued sponsor, they have contributed significantly to the promotion of cybersecurity and the creation of a safer online world.
 
 WebSec's team of professionals is committed to staying ahead of the latest threats and developing cutting-edge solutions to keep their clients protected. Their passion for cybersecurity education has made them a trusted and reliable partner in the industry.
 
@@ -16,6 +16,6 @@ Through their sponsorship and support, WebSec has demonstrated their commitment 
 
 Overall, WebSec BV is a trusted and respected leader in the fight against cybercrime, and their sponsorship and support have been instrumental in promoting a safer online world. They are a valued partner and their contributions to this important work are truly appreciated.
 
-Website: [websec.nl](websec.nl)
+Website: [websec.net](websec.net)
 
-Blog: [websec.nl/blog](websec.nl/blog)
+Blog: [websec.net/blog](websec.net/blog)
